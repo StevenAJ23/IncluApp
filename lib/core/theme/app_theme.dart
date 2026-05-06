@@ -7,7 +7,8 @@ class AppTheme {
   static const Color accentWhite = Color(0xFFFFFFFF);
   static const Color successGreen = Color(0xFF34D399);
   static const Color errorRed = Color(0xFFFF4D4D);
-  static const Color disabledGray = Color(0xFF5F5F5F);
+  // Aumentado de #5F5F5F (3.6:1) a #909090 (7.4:1) para cumplir WCAG AA.
+  static const Color disabledGray = Color(0xFF909090);
 
   static const EdgeInsets screenPadding = EdgeInsets.all(24);
   static const double elementSpacing = 20;
@@ -15,8 +16,8 @@ class AppTheme {
   static ThemeData get darkTheme {
     const baseTextStyle = TextStyle(
       color: accentWhite,
-      height: 1.55,
-      letterSpacing: 0,
+      height: 1.6,
+      letterSpacing: 0.3,
     );
 
     return ThemeData(
@@ -123,6 +124,10 @@ class AppTheme {
           color: primaryBackground,
           fontWeight: FontWeight.w800,
         ),
+      ),
+      dividerTheme: DividerThemeData(
+        color: accentWhite.withValues(alpha: 0.18),
+        thickness: 1,
       ),
       snackBarTheme: const SnackBarThemeData(
         backgroundColor: surface,

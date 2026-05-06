@@ -85,6 +85,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
     await _ttsService.setSpeechRate(value);
   }
 
+  // Describe la velocidad en palabras para lectores de pantalla.
+  String _speedLabel(double value) {
+    if (value <= 0.30) return 'Muy lenta';
+    if (value <= 0.45) return 'Lenta';
+    if (value <= 0.60) return 'Normal';
+    return 'Rápida';
+  }
+
   @override
   Widget build(BuildContext context) {
     final seconds = (widget.processingMs / 1000).toStringAsFixed(1);
@@ -97,14 +105,18 @@ class _ReaderScreenState extends State<ReaderScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // semanticsLabel reemplaza "Resultado OCR" por una frase clara
+              // para usuarios con lector de pantalla.
               Text(
                 'Resultado OCR',
+                semanticsLabel: 'Resultado del reconocimiento de texto',
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 'Procesado en $seconds s',
+                semanticsLabel: 'Texto procesado en $seconds segundos',
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
@@ -127,8 +139,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 ),
               ),
               const SizedBox(height: 18),
+              // semanticsLabel más descriptivo que el texto corto "Velocidad".
               Text(
                 'Velocidad',
+                semanticsLabel: 'Control de velocidad de lectura',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               Slider(
@@ -136,13 +150,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 min: 0.25,
                 max: 0.8,
                 divisions: 11,
-                label: _speechRate.toStringAsFixed(2),
+                label: _speedLabel(_speechRate),
+                // semanticFormatterCallback: convierte el número (0.45)
+                // en palabras comprensibles para TalkBack / VoiceOver.
+                semanticFormatterCallback: _speedLabel,
                 onChanged: _changeSpeechRate,
               ),
               const SizedBox(height: 12),
+              // semanticLabel: '' en los iconos evita que el lector de pantalla
+              // anuncie el nombre del icono antes del texto del botón.
               ElevatedButton.icon(
                 onPressed: _speak,
-                icon: Icon(_isSpeaking ? Icons.replay : Icons.volume_up),
+                icon: Icon(
+                  _isSpeaking ? Icons.replay : Icons.volume_up,
+                  semanticLabel: '',
+                ),
                 label: Text(_isSpeaking ? 'Repetir lectura' : 'Leer texto'),
               ),
               const SizedBox(height: 12),
@@ -151,7 +173,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _pause,
-                      icon: const Icon(Icons.pause),
+                      icon: const Icon(Icons.pause, semanticLabel: ''),
                       label: const Text('Pausar'),
                     ),
                   ),
@@ -159,7 +181,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _stop,
-                      icon: const Icon(Icons.stop),
+                      icon: const Icon(Icons.stop, semanticLabel: ''),
                       label: const Text('Detener'),
                     ),
                   ),

@@ -16,7 +16,12 @@ class FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Semantics combinado: evita que el lector de pantalla anuncie
+    // el icono, el título y la descripción como tres elementos separados.
+    return Semantics(
+      label: '$title. $description',
+      excludeSemantics: true,
+      child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
         color: AppTheme.surface,
@@ -53,6 +58,6 @@ class FeatureCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

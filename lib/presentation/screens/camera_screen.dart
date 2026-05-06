@@ -174,13 +174,13 @@ class _CameraScreenState extends State<CameraScreen> {
               const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: _isProcessing ? null : _captureFromCamera,
-                icon: const Icon(Icons.photo_camera, size: 34),
+                icon: const Icon(Icons.photo_camera, size: 34, semanticLabel: ''),
                 label: const Text('Abrir cámara'),
               ),
               const SizedBox(height: 14),
               OutlinedButton.icon(
                 onPressed: _isProcessing ? null : _pickFromGallery,
-                icon: const Icon(Icons.image_search, size: 32),
+                icon: const Icon(Icons.image_search, size: 32, semanticLabel: ''),
                 label: const Text('Elegir imagen'),
               ),
             ],
@@ -202,21 +202,25 @@ class _AppHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 62,
-          height: 62,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryYellow.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: AppTheme.primaryYellow.withValues(alpha: 0.40),
-              width: 1.5,
+        // ExcludeSemantics: el icono es decorativo, el texto "IncluApp"
+        // ya describe esta sección al lector de pantalla.
+        ExcludeSemantics(
+          child: Container(
+            width: 62,
+            height: 62,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryYellow.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppTheme.primaryYellow.withValues(alpha: 0.40),
+                width: 1.5,
+              ),
             ),
-          ),
-          child: const Icon(
-            Icons.document_scanner,
-            color: AppTheme.primaryYellow,
-            size: 34,
+            child: const Icon(
+              Icons.document_scanner,
+              color: AppTheme.primaryYellow,
+              size: 34,
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -293,8 +297,11 @@ class _ReadyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // excludeSemantics: true evita que el lector de pantalla anuncie
+    // por separado el icono y el texto; solo lee el label combinado.
     return Semantics(
-      label: 'Listo para capturar texto',
+      label: 'Listo para capturar texto. Elige una imagen para comenzar.',
+      excludeSemantics: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -333,8 +340,9 @@ class _ProcessingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Procesando texto',
+      label: 'Procesando texto, por favor espera',
       liveRegion: true,
+      excludeSemantics: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -361,20 +369,24 @@ class _ButtonDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Text(
-            'o',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.disabledGray,
-                ),
+    // ExcludeSemantics: el separador "o" es puramente decorativo;
+    // los lectores de pantalla no necesitan anunciarlo.
+    return ExcludeSemantics(
+      child: Row(
+        children: [
+          const Expanded(child: Divider()),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text(
+              'o',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.disabledGray,
+                  ),
+            ),
           ),
-        ),
-        const Expanded(child: Divider()),
-      ],
+          const Expanded(child: Divider()),
+        ],
+      ),
     );
   }
 }
