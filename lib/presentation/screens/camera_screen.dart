@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/ocr_service.dart';
 import '../widgets/feature_card.dart';
+import 'help_screen.dart';
 import 'reader_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -129,7 +130,18 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('IncluApp')),
+      appBar: AppBar(
+        title: const Text('IncluApp'),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const HelpScreen()),
+            ),
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Ayuda',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: AppTheme.screenPadding,
