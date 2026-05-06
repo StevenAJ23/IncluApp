@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/services/ocr_service.dart';
+import '../widgets/feature_card.dart';
 import 'reader_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -135,11 +136,9 @@ class _CameraScreenState extends State<CameraScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Captura tu texto',
-                style: Theme.of(context).textTheme.headlineLarge,
-                textAlign: TextAlign.center,
-              ),
+              const _AppHero(),
+              const SizedBox(height: AppTheme.elementSpacing),
+              const _FeatureCardsRow(),
               const SizedBox(height: AppTheme.elementSpacing),
               Expanded(
                 child: Center(
@@ -178,6 +177,85 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 }
 
+// ── Hero de la pantalla principal ─────────────────────────────────────────────
+
+class _AppHero extends StatelessWidget {
+  const _AppHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryYellow.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.document_scanner,
+                color: AppTheme.primaryYellow,
+                size: 38,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Text(
+              'IncluApp',
+              style: Theme.of(context).textTheme.headlineLarge,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Diseñada para personas con dislexia\ny baja visión. Sin internet. Sin nubes.',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.disabledGray,
+              ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Fila de tarjetas de funciones ─────────────────────────────────────────────
+
+class _FeatureCardsRow extends StatelessWidget {
+  const _FeatureCardsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 100,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: const [
+          FeatureCard(
+            icon: Icons.wifi_off_rounded,
+            title: 'Sin internet',
+            description: 'OCR 100% local',
+          ),
+          FeatureCard(
+            icon: Icons.record_voice_over_rounded,
+            title: 'Voz natural',
+            description: 'TTS nativo',
+          ),
+          FeatureCard(
+            icon: Icons.lock_outline_rounded,
+            title: 'Privado',
+            description: 'Todo en tu dispositivo',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Estado: listo para capturar ───────────────────────────────────────────────
+
 class _ReadyState extends StatelessWidget {
   const _ReadyState();
 
@@ -191,16 +269,24 @@ class _ReadyState extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surface,
           border: Border.all(color: AppTheme.primaryYellow, width: 2),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.document_scanner, size: 92),
-            const SizedBox(height: 24),
+            const Icon(Icons.document_scanner, size: 72),
+            const SizedBox(height: 16),
             Text(
-              'Texto a voz sin internet',
+              'Listo para leer',
               style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Captura o selecciona una imagen\ncon texto para comenzar',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.disabledGray,
+                  ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -210,6 +296,8 @@ class _ReadyState extends StatelessWidget {
   }
 }
 
+// ── Estado: procesando OCR ────────────────────────────────────────────────────
+
 class _ProcessingState extends StatelessWidget {
   const _ProcessingState();
 
@@ -218,10 +306,20 @@ class _ProcessingState extends StatelessWidget {
     return Semantics(
       label: 'Procesando texto',
       liveRegion: true,
-      child: const SizedBox(
-        width: 96,
-        height: 96,
-        child: CircularProgressIndicator(strokeWidth: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 80,
+            height: 80,
+            child: CircularProgressIndicator(strokeWidth: 7),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Analizando imagen...',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+        ],
       ),
     );
   }
