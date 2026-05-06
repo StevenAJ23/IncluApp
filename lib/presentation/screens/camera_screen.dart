@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../data/services/ocr_service.dart';
 import '../widgets/feature_card.dart';
 import 'help_screen.dart';
@@ -42,10 +43,7 @@ class _CameraScreenState extends State<CameraScreen> {
     await HapticFeedback.mediumImpact();
 
     final hasPermission = await _ensurePermission(source);
-    if (!hasPermission) {
-      _showMessage('Permiso no concedido. Revisa los ajustes del dispositivo.');
-      return;
-    }
+    if (!hasPermission) return;
 
     final image = await _imagePicker.pickImage(
       source: source,
@@ -53,9 +51,7 @@ class _CameraScreenState extends State<CameraScreen> {
       maxWidth: 1800,
     );
 
-    if (image == null) {
-      return;
-    }
+    if (image == null) return;
 
     setState(() {
       _isProcessing = true;
@@ -63,13 +59,42 @@ class _CameraScreenState extends State<CameraScreen> {
     });
 
     final stopwatch = Stopwatch()..start();
-    final extractedText = await _ocrService.extractTextFromImage(image.path);
-    stopwatch.stop();
 
-    if (!mounted) {
+    // ── OCR con manejo de error ───────────────────────────────────────────────
+    String extractedText;
+    try {
+      extractedText = await _ocrService.extractTextFromImage(image.path);
+    } catch (e) {
+      stopwatch.stop();
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = null;
+      });
+      AppSnackBar.showError(
+        context,
+        'No se pudo analizar la imagen. Intenta con una foto más clara.',
+      );
       return;
     }
 
+    stopwatch.stop();
+    if (!mounted) return;
+
+    // ── Sin texto detectado ───────────────────────────────────────────────────
+    if (extractedText.trim().isEmpty) {
+      setState(() {
+        _isProcessing = false;
+        _statusMessage = null;
+      });
+      AppSnackBar.showWarning(
+        context,
+        'No se detectó texto. Prueba con mejor iluminación o elige otra imagen.',
+      );
+      return;
+    }
+
+    // ── Guardar en historial (fallo silencioso: no bloquea al usuario) ────────
     await _saveReading(
       text: extractedText,
       imagePath: image.path,
@@ -82,10 +107,7 @@ class _CameraScreenState extends State<CameraScreen> {
     });
 
     await HapticFeedback.heavyImpact();
-
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -98,33 +120,89 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Future<bool> _ensurePermission(ImageSource source) async {
-    if (source == ImageSource.camera) {
-      final status = await Permission.camera.request();
-      return status.isGranted || status.isLimited;
-    }
+  // ── Permisos ──────────────────────────────────────────────────────────────
 
-    return true;
+  Future<bool> _ensurePermission(ImageSource source) async {
+    if (source != ImageSource.camera) return true;
+
+    final status = await Permission.camera.request();
+
+    if (status.isGranted || status.isLimited) return true;
+
+    if (!mounted) return false;
+
+    if (status.isPermanentlyDenied) {
+      // El usuario bloqueó el permiso permanentemente: necesita ir a ajustes.
+      _showPermissionDialog();
+    } else {
+      AppSnackBar.showError(
+        context,
+        'Permiso de cámara denegado. Revisa los ajustes del dispositivo.',
+      );
+    }
+    return false;
   }
+
+  void _showPermissionDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.camera_alt_outlined,
+              color: AppTheme.primaryYellow,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Permiso de cámara',
+              style: Theme.of(ctx).textTheme.titleLarge,
+            ),
+          ],
+        ),
+        content: Text(
+          'IncluApp necesita acceso a la cámara para capturar texto. '
+          'Habilita el permiso en los ajustes del dispositivo.',
+          style: Theme.of(ctx).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              openAppSettings();
+            },
+            child: const Text('Abrir ajustes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Persistencia ──────────────────────────────────────────────────────────
 
   Future<void> _saveReading({
     required String text,
     required String imagePath,
     required int processingMs,
   }) async {
-    final box = Hive.box<Map>('reading_history');
-    await box.add({
-      'text': text,
-      'imagePath': imagePath,
-      'processingMs': processingMs,
-      'createdAt': DateTime.now().toIso8601String(),
-    });
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    try {
+      final box = Hive.box<Map>('reading_history');
+      await box.add({
+        'text': text,
+        'imagePath': imagePath,
+        'processingMs': processingMs,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // El guardado en historial es secundario; no interrumpimos al usuario.
+    }
   }
 
   @override
@@ -192,8 +270,6 @@ class _CameraScreenState extends State<CameraScreen> {
 }
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
-// Icono a la izquierda + título y descripción en columna a la derecha.
-// El Row es más compacto que una columna centrada y deja espacio al Expanded.
 
 class _AppHero extends StatelessWidget {
   const _AppHero();
@@ -202,8 +278,6 @@ class _AppHero extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // ExcludeSemantics: el icono es decorativo, el texto "IncluApp"
-        // ya describe esta sección al lector de pantalla.
         ExcludeSemantics(
           child: Container(
             width: 62,
@@ -249,7 +323,6 @@ class _AppHero extends StatelessWidget {
 }
 
 // ── Tarjetas de funciones ─────────────────────────────────────────────────────
-// Row con Expanded en lugar de ListView: las 3 tarjetas siempre visibles.
 
 class _FeatureCardsRow extends StatelessWidget {
   const _FeatureCardsRow();
@@ -290,15 +363,12 @@ class _FeatureCardsRow extends StatelessWidget {
 }
 
 // ── Estado: listo ─────────────────────────────────────────────────────────────
-// Icono circular en lugar de caja rectangular: apariencia más moderna.
 
 class _ReadyState extends StatelessWidget {
   const _ReadyState();
 
   @override
   Widget build(BuildContext context) {
-    // excludeSemantics: true evita que el lector de pantalla anuncie
-    // por separado el icono y el texto; solo lee el label combinado.
     return Semantics(
       label: 'Listo para capturar texto. Elige una imagen para comenzar.',
       excludeSemantics: true,
@@ -369,8 +439,6 @@ class _ButtonDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ExcludeSemantics: el separador "o" es puramente decorativo;
-    // los lectores de pantalla no necesitan anunciarlo.
     return ExcludeSemantics(
       child: Row(
         children: [

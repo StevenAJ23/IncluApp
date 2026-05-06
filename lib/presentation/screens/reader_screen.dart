@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../data/services/tts_service.dart';
 
 class ReaderScreen extends StatefulWidget {
@@ -25,11 +26,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
   double _speechRate = 0.45;
   bool _isSpeaking = false;
 
+  bool get _hasText => widget.extractedText.trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _speak();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Auto-inicio silencioso: sin SnackBar de éxito para no interferir con TTS.
+      await _speak(showFeedback: false);
     });
   }
 
@@ -39,26 +43,45 @@ class _ReaderScreenState extends State<ReaderScreen> {
     super.dispose();
   }
 
-  Future<void> _speak() async {
+  // [showFeedback] = true solo para pulsaciones manuales del botón.
+  Future<void> _speak({bool showFeedback = true}) async {
+    if (!_hasText) {
+      if (mounted) {
+        AppSnackBar.showWarning(
+          context,
+          'No hay texto para leer. Vuelve atrás y captura una imagen con texto visible.',
+        );
+      }
+      return;
+    }
+
     await HapticFeedback.selectionClick();
     final started = await _ttsService.speak(widget.extractedText);
 
-    if (!mounted) {
+    if (!mounted) return;
+
+    if (!started) {
+      AppSnackBar.showError(
+        context,
+        'No se pudo iniciar la lectura. Comprueba el volumen del dispositivo.',
+      );
       return;
     }
 
     setState(() {
-      _isSpeaking = started;
+      _isSpeaking = true;
     });
+
+    if (showFeedback) {
+      AppSnackBar.showSuccess(context, 'Lectura iniciada');
+    }
   }
 
   Future<void> _pause() async {
     await HapticFeedback.selectionClick();
     await _ttsService.pause();
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     setState(() {
       _isSpeaking = false;
@@ -69,9 +92,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     await HapticFeedback.mediumImpact();
     await _ttsService.stop();
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
 
     setState(() {
       _isSpeaking = false;
@@ -85,7 +106,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
     await _ttsService.setSpeechRate(value);
   }
 
-  // Describe la velocidad en palabras para lectores de pantalla.
   String _speedLabel(double value) {
     if (value <= 0.30) return 'Muy lenta';
     if (value <= 0.45) return 'Lenta';
@@ -105,8 +125,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // semanticsLabel reemplaza "Resultado OCR" por una frase clara
-              // para usuarios con lector de pantalla.
               Text(
                 'Resultado OCR',
                 semanticsLabel: 'Resultado del reconocimiento de texto',
@@ -131,15 +149,24 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: SingleChildScrollView(
-                    child: SelectableText(
-                      widget.extractedText,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    child: _hasText
+                        ? SelectableText(
+                            widget.extractedText,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          )
+                        // Placeholder cuando OCR no detectó texto.
+                        : Text(
+                            'No se detectó texto en la imagen.',
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                  color: AppTheme.disabledGray,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                 ),
               ),
               const SizedBox(height: 18),
-              // semanticsLabel más descriptivo que el texto corto "Velocidad".
               Text(
                 'Velocidad',
                 semanticsLabel: 'Control de velocidad de lectura',
@@ -151,16 +178,12 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 max: 0.8,
                 divisions: 11,
                 label: _speedLabel(_speechRate),
-                // semanticFormatterCallback: convierte el número (0.45)
-                // en palabras comprensibles para TalkBack / VoiceOver.
                 semanticFormatterCallback: _speedLabel,
                 onChanged: _changeSpeechRate,
               ),
               const SizedBox(height: 12),
-              // semanticLabel: '' en los iconos evita que el lector de pantalla
-              // anuncie el nombre del icono antes del texto del botón.
               ElevatedButton.icon(
-                onPressed: _speak,
+                onPressed: () => _speak(showFeedback: true),
                 icon: Icon(
                   _isSpeaking ? Icons.replay : Icons.volume_up,
                   semanticLabel: '',
