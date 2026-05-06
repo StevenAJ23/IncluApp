@@ -1,3 +1,5 @@
+
+}
 pluginManagement {
     val flutterSdkPath =
         run {

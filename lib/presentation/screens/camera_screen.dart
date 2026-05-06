@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/services/ocr_service.dart';
 import '../widgets/feature_card.dart';
+import 'help_screen.dart';
 import 'reader_screen.dart';
 
 class CameraScreen extends StatefulWidget {
@@ -129,7 +130,18 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('IncluApp')),
+      appBar: AppBar(
+        title: const Text('IncluApp'),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const HelpScreen()),
+            ),
+            icon: const Icon(Icons.help_outline_rounded),
+            tooltip: 'Ayuda',
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: AppTheme.screenPadding,
@@ -137,13 +149,13 @@ class _CameraScreenState extends State<CameraScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const _AppHero(),
-              const SizedBox(height: AppTheme.elementSpacing),
+              const SizedBox(height: 16),
               const _FeatureCardsRow(),
-              const SizedBox(height: AppTheme.elementSpacing),
+              const SizedBox(height: 16),
               Expanded(
                 child: Center(
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
+                    duration: const Duration(milliseconds: 300),
                     child: _isProcessing
                         ? const _ProcessingState()
                         : const _ReadyState(),
@@ -156,8 +168,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: AppTheme.elementSpacing),
+                const SizedBox(height: 16),
               ],
+              const _ButtonDivider(),
+              const SizedBox(height: 12),
               ElevatedButton.icon(
                 onPressed: _isProcessing ? null : _captureFromCamera,
                 icon: const Icon(Icons.photo_camera, size: 34),
@@ -177,76 +191,93 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 }
 
-// ── Hero de la pantalla principal ─────────────────────────────────────────────
+// ── Hero ──────────────────────────────────────────────────────────────────────
+// Icono a la izquierda + título y descripción en columna a la derecha.
+// El Row es más compacto que una columna centrada y deja espacio al Expanded.
 
 class _AppHero extends StatelessWidget {
   const _AppHero();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryYellow.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.document_scanner,
-                color: AppTheme.primaryYellow,
-                size: 38,
-              ),
+        Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryYellow.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.primaryYellow.withValues(alpha: 0.40),
+              width: 1.5,
             ),
-            const SizedBox(width: 14),
-            Text(
-              'IncluApp',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-          ],
+          ),
+          child: const Icon(
+            Icons.document_scanner,
+            color: AppTheme.primaryYellow,
+            size: 34,
+          ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          'Diseñada para personas con dislexia\ny baja visión. Sin internet. Sin nubes.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.disabledGray,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'IncluApp',
+                style: Theme.of(context).textTheme.headlineLarge,
               ),
-          textAlign: TextAlign.center,
+              const SizedBox(height: 4),
+              Text(
+                'Convierte texto a voz\nsin internet ni servidores',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.disabledGray,
+                    ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Fila de tarjetas de funciones ─────────────────────────────────────────────
+// ── Tarjetas de funciones ─────────────────────────────────────────────────────
+// Row con Expanded en lugar de ListView: las 3 tarjetas siempre visibles.
 
 class _FeatureCardsRow extends StatelessWidget {
   const _FeatureCardsRow();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: const [
-          FeatureCard(
-            icon: Icons.wifi_off_rounded,
-            title: 'Sin internet',
-            description: 'OCR 100% local',
+    return const IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: FeatureCard(
+              icon: Icons.wifi_off_rounded,
+              title: 'Sin\ninternet',
+              description: 'OCR local',
+            ),
           ),
-          FeatureCard(
-            icon: Icons.record_voice_over_rounded,
-            title: 'Voz natural',
-            description: 'TTS nativo',
+          SizedBox(width: 10),
+          Expanded(
+            child: FeatureCard(
+              icon: Icons.record_voice_over_rounded,
+              title: 'Voz\nnatural',
+              description: 'TTS nativo',
+            ),
           ),
-          FeatureCard(
-            icon: Icons.lock_outline_rounded,
-            title: 'Privado',
-            description: 'Todo en tu dispositivo',
+          SizedBox(width: 10),
+          Expanded(
+            child: FeatureCard(
+              icon: Icons.lock_outline_rounded,
+              title: 'Privado',
+              description: 'Solo local',
+            ),
           ),
         ],
       ),
@@ -254,7 +285,8 @@ class _FeatureCardsRow extends StatelessWidget {
   }
 }
 
-// ── Estado: listo para capturar ───────────────────────────────────────────────
+// ── Estado: listo ─────────────────────────────────────────────────────────────
+// Icono circular en lugar de caja rectangular: apariencia más moderna.
 
 class _ReadyState extends StatelessWidget {
   const _ReadyState();
@@ -263,34 +295,31 @@ class _ReadyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: 'Listo para capturar texto',
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(28),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          border: Border.all(color: AppTheme.primaryYellow, width: 2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.document_scanner, size: 72),
-            const SizedBox(height: 16),
-            Text(
-              'Listo para leer',
-              style: Theme.of(context).textTheme.titleLarge,
-              textAlign: TextAlign.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppTheme.primaryYellow.withValues(alpha: 0.50),
+                width: 2,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Captura o selecciona una imagen\ncon texto para comenzar',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppTheme.disabledGray,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+            child: const Icon(Icons.add_photo_alternate_outlined, size: 36),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Elige una imagen para comenzar',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.disabledGray,
+                ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
@@ -310,17 +339,42 @@ class _ProcessingState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(
-            width: 80,
-            height: 80,
+            width: 72,
+            height: 72,
             child: CircularProgressIndicator(strokeWidth: 7),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           Text(
             'Analizando imagen...',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Separador entre botones ───────────────────────────────────────────────────
+
+class _ButtonDivider extends StatelessWidget {
+  const _ButtonDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'o',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.disabledGray,
+                ),
+          ),
+        ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }

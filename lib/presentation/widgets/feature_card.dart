@@ -17,9 +17,7 @@ class FeatureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 132,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -29,10 +27,10 @@ class FeatureCard extends StatelessWidget {
         ),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: AppTheme.primaryYellow, size: 26),
+          Icon(icon, color: AppTheme.primaryYellow, size: 24),
           const SizedBox(height: 8),
           Text(
             title,
@@ -43,7 +41,7 @@ class FeatureCard extends StatelessWidget {
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 4),
           Text(
             description,
             style: const TextStyle(
